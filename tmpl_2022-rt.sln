@@ -4,6 +4,8 @@ VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "1. Basics", "1. Basics\basics.vcxproj", "{1B482D44-6893-42E7-ADF6-E497E4FCE916}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2. Whitted", "2. Whitted\whitted.vcxproj", "{07C7B7F4-ADDC-442F-8D66-B4125803028B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -14,6 +16,10 @@ Global
 		{1B482D44-6893-42E7-ADF6-E497E4FCE916}.Debug|x64.Build.0 = Debug|x64
 		{1B482D44-6893-42E7-ADF6-E497E4FCE916}.Release|x64.ActiveCfg = Release|x64
 		{1B482D44-6893-42E7-ADF6-E497E4FCE916}.Release|x64.Build.0 = Release|x64
+		{07C7B7F4-ADDC-442F-8D66-B4125803028B}.Debug|x64.ActiveCfg = Debug|x64
+		{07C7B7F4-ADDC-442F-8D66-B4125803028B}.Debug|x64.Build.0 = Debug|x64
+		{07C7B7F4-ADDC-442F-8D66-B4125803028B}.Release|x64.ActiveCfg = Release|x64
+		{07C7B7F4-ADDC-442F-8D66-B4125803028B}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

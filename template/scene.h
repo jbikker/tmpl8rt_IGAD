@@ -19,7 +19,7 @@
 // -----------------------------------------------------------
 
 #define SPEEDTRIX
-#define FOURLIGHTS
+// #define FOURLIGHTS
 
 #define PLANE_X(o,i) {t=-(ray.O.x+o)*ray.rD.x;if(t<ray.t&&t>0)ray.t=t,ray.objIdx=i;}
 #define PLANE_Y(o,i) {t=-(ray.O.y+o)*ray.rD.y;if(t<ray.t&&t>0)ray.t=t,ray.objIdx=i;}
