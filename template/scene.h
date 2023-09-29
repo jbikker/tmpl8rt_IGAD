@@ -13,12 +13,8 @@
 // - Not everything is axis aligned - for cache experiments
 // - Can be evaluated at arbitrary time - for motion blur
 // - Has some high-frequency details - for filtering
-// Some speed tricks that severely affect maintainability
-// are enclosed in #ifdef SPEEDTRIX / #endif. Mind these
-// if you plan to alter the scene in any way.
 // -----------------------------------------------------------
 
-#define SPEEDTRIX
 // #define FOURLIGHTS
 
 #define PLANE_X(o,i) {t=-(ray.O.x+o)*ray.rD.x;if(t<ray.t&&t>0)ray.t=t,ray.objIdx=i;}
@@ -36,20 +32,14 @@ public:
 		O = origin, D = direction, t = distance;
 		// calculate reciprocal ray direction for triangles and AABBs
 		rD = float3( 1 / D.x, 1 / D.y, 1 / D.z );
-	#ifdef SPEEDTRIX
 		d0 = 1, d1 = d2 = 0; // ready for SIMD matrix math
-	#endif
 		objIdx = idx;
 	}
 	float3 IntersectionPoint() const { return O + t * D; }
 	// ray data
-#ifndef SPEEDTRIX
-	float3 O, D, rD;
-#else
 	union { struct { float3 O; float d0; }; __m128 O4; };
 	union { struct { float3 D; float d1; }; __m128 D4; };
 	union { struct { float3 rD; float d2; }; __m128 rD4; };
-#endif
 	float t = 1e34f;
 	int objIdx = -1;
 	bool inside = false; // true when in medium
@@ -68,15 +58,9 @@ public:
 		pos( p ), r2( r* r ), invr( 1 / r ), objIdx( idx ) {}
 	void Intersect( Ray& ray ) const
 	{
-	#if 1
 		const __m128 oc = _mm_sub_ps( ray.O4, _mm_set_ps( 1, 1, this->pos.y, -1.8f ) );
 		const float b = _mm_dp_ps( oc, ray.D4, 0xFF ).m128_f32[0];
 		const float c = _mm_dp_ps( oc, oc, 0xFF ).m128_f32[0];
-	#else
-		float3 oc = ray.O - this->pos;
-		float b = dot( oc, ray.D );
-		float c = dot( oc, oc ) - this->r2;
-	#endif
 		float t, d = b * b - c;
 		if (d <= 0) return;
 		d = sqrtf( d ), t = -b - d;
@@ -92,15 +76,9 @@ public:
 	}
 	bool IsOccluded( const Ray& ray ) const
 	{
-	#if 1
 		const __m128 oc = _mm_sub_ps( ray.O4, _mm_set_ps( 1, 1, this->pos.y, -1.8f ) );
 		const float b = _mm_dp_ps( oc, ray.D4, 0xFF ).m128_f32[0];
 		const float c = _mm_dp_ps( oc, oc, 0xFF ).m128_f32[0];
-	#else
-		float3 oc = ray.O - this->pos;
-		float b = dot( oc, ray.D );
-		float c = dot( oc, oc ) - this->r2;
-	#endif
 		float t, d = b * b - c;
 		if (d <= 0) return false;
 		d = sqrtf( d ), t = -b - d;
@@ -210,7 +188,6 @@ public:
 	{
 		// 'rotate' the cube by transforming the ray into object space
 		// using the inverse of the cube transform.
-	#ifdef SPEEDTRIX
 		// an AABB can be efficiently tested with SIMD - and matrix math is easy too. Profit!
 		const __m128 a4 = ray.O4, b4 = ray.D4;
 		__m128 v0 = _mm_mul_ps( a4, _mm_load_ps( &invM.cell[0] ) ), v1 = _mm_mul_ps( a4, _mm_load_ps( &invM.cell[4] ) );
@@ -236,35 +213,10 @@ public:
 		{
 			if (tmax < ray.t) ray.t = tmax, ray.objIdx = objIdx;
 		}
-	#else
-		float3 O = TransformPosition( ray.O, invM );
-		float3 D = TransformVector( ray.D, invM );
-		float rDx = 1 / D.x, rDy = 1 / D.y, rDz = 1 / D.z;
-		int signx = D.x < 0, signy = D.y < 0, signz = D.z < 0;
-		float tmin = (b[signx].x - O.x) * rDx;
-		float tmax = (b[1 - signx].x - O.x) * rDx;
-		float tymin = (b[signy].y - O.y) * rDy;
-		float tymax = (b[1 - signy].y - O.y) * rDy;
-		if (tmin > tymax || tymin > tmax) return;
-		tmin = max( tmin, tymin ), tmax = min( tmax, tymax );
-		float tzmin = (b[signz].z - O.z) * rDz;
-		float tzmax = (b[1 - signz].z - O.z) * rDz;
-		if (tmin > tzmax || tzmin > tmax) return;
-		tmin = max( tmin, tzmin ), tmax = min( tmax, tzmax );
-		if (tmin > 0)
-		{
-			if (tmin < ray.t) ray.t = tmin, ray.objIdx = objIdx;
-		}
-		else if (tmax > 0)
-		{
-			if (tmax < ray.t) ray.t = tmax, ray.objIdx = objIdx;
-		}
-	#endif
 	}
 	bool IsOccluded( const Ray& ray ) const
 	{
-	#ifdef SPEEDTRIX
-	// an AABB can be efficiently tested with SIMD - and matrix math is easy too. Profit!
+		// an AABB can be efficiently tested with SIMD - and matrix math is easy too. Profit!
 		const __m128 a4 = ray.O4, b4 = ray.D4;
 		__m128 v0 = _mm_mul_ps( a4, _mm_load_ps( &invM.cell[0] ) ), v1 = _mm_mul_ps( a4, _mm_load_ps( &invM.cell[4] ) );
 		__m128 v2 = _mm_mul_ps( a4, _mm_load_ps( &invM.cell[8] ) ), v3 = _mm_mul_ps( a4, _mm_load_ps( &invM.cell[12] ) );
@@ -282,17 +234,6 @@ public:
 		float tmax = min( vmax4.m128_f32[0], min( vmax4.m128_f32[1], vmax4.m128_f32[2] ) );
 		float tmin = max( vmin4.m128_f32[0], max( vmin4.m128_f32[1], vmin4.m128_f32[2] ) );
 		return tmax > 0 && tmin < tmax && tmin < ray.t;
-	#else
-		float3 O = TransformPosition_SSE( ray.O4, invM );
-		float3 D = TransformVector_SSE( ray.D4, invM );
-		float rDx = 1 / D.x, rDy = 1 / D.y, rDz = 1 / D.z;
-		float t1 = (b[0].x - O.x) * rDx, t2 = (b[1].x - O.x) * rDx;
-		float t3 = (b[0].y - O.y) * rDy, t4 = (b[1].y - O.y) * rDy;
-		float t5 = (b[0].z - O.z) * rDz, t6 = (b[1].z - O.z) * rDz;
-		float tmin = max( max( min( t1, t2 ), min( t3, t4 ) ), min( t5, t6 ) );
-		float tmax = min( min( max( t1, t2 ), max( t3, t4 ) ), max( t5, t6 ) );
-		return tmax > 0 && tmin < tmax && tmin < ray.t;
-	#endif
 	}
 	float3 GetNormal( const float3 I ) const
 	{
@@ -316,11 +257,7 @@ public:
 	{
 		return float3( 1, 1, 1 );
 	}
-#ifdef SPEEDTRIX
 	union { float4 b[2]; struct { __m128 bmin4, bmax4; }; };
-#else
-	float3 b[2];
-#endif
 	mat4 M, invM;
 	int objIdx = -1;
 };
@@ -714,7 +651,6 @@ public:
 	void FindNearest( Ray& ray ) const
 	{
 		// room walls - ugly shortcut for more speed
-	#ifdef SPEEDTRIX
 		// prefetching
 		const float3 spos = sphere.pos;
 		const float3 ro = ray.O, rd = ray.D;
@@ -733,13 +669,7 @@ public:
 		/* first: unconditional */  ray.t = t4.m128_f32[0], ray.objIdx = idx4.m128i_i32[0];
 		if (t4.m128_f32[1] < ray.t) ray.t = t4.m128_f32[1], ray.objIdx = idx4.m128i_i32[1];
 		if (t4.m128_f32[2] < ray.t) ray.t = t4.m128_f32[2], ray.objIdx = idx4.m128i_i32[2];
-	#else
-		if (ray.D.x < 0) PLANE_X( 3, 4 ) else PLANE_X( -2.99f, 5 );
-		if (ray.D.y < 0) PLANE_Y( 1, 6 ) else PLANE_Y( -2, 7 );
-		if (ray.D.z < 0) PLANE_Z( 3, 8 ) else PLANE_Z( -3.99f, 9 );
-	#endif
 	#ifdef FOURLIGHTS
-	#ifdef SPEEDTRIX
 		// efficient four-quad intersection by Jesse Vrooman
 		const __m128 t = _mm_div_ps( _mm_add_ps( _mm_set1_ps( ray.O.y ),
 			_mm_set1_ps( -1.5 ) ), _mm_xor_ps( _mm_set1_ps( ray.D.y ), _mm_set1_ps( -0.0 ) ) );
@@ -757,12 +687,8 @@ public:
 		if (maskedT.m128_f32[1] > 0) ray.t = maskedT.m128_f32[1], ray.objIdx = 0;
 		if (maskedT.m128_f32[0] > 0) ray.t = maskedT.m128_f32[0], ray.objIdx = 0;
 	#else
-		for (int i = 0; i < 4; i++) quad[i].Intersect( ray );
-	#endif
-	#else
 		quad.Intersect( ray );
 	#endif
-	#ifdef SPEEDTRIX // hardcoded spheres, a bit faster this way but very ugly
 		{
 			// SIMD sphere intersection code by Jesse Vrooman
 			const __m128 oc = _mm_sub_ps( ray.O4, sphere.pos4 );
@@ -774,7 +700,7 @@ public:
 				const bool hit = t < ray.t && t > 0;
 				if (hit) { ray.t = t, ray.objIdx = 1; }
 			};
-}
+		}
 		{
 			// SIMD sphere intersection code by Jesse Vrooman
 			const static __m128 s4 = _mm_setr_ps( 0, 2.5f, -3.07f, 1 );
@@ -788,17 +714,12 @@ public:
 				if (hit) { ray.t = t, ray.objIdx = 2; }
 			};
 		}
-	#else
-		sphere.Intersect( ray );
-		sphere2.Intersect( ray );
-	#endif
 		cube.Intersect( ray );
 		torus.Intersect( ray );
 	}
 	bool IsOccluded( const Ray& ray ) const
 	{
 		if (cube.IsOccluded( ray )) return true;
-	#ifdef SPEEDTRIX
 		const float3 oc = ray.O - sphere.pos;
 		const float b = dot( oc, ray.D ), c = dot( oc, oc ) - (0.6f * 0.6f);
 		const float d = b * b - c;
@@ -808,9 +729,6 @@ public:
 			const bool hit = t < ray.t && t > 0;
 			if (hit) return true;
 		}
-	#else
-		if (sphere.IsOccluded( ray )) return true;
-	#endif
 	#ifdef FOURLIGHTS
 		for (int i = 0; i < 4; i++) if (quad[i].IsOccluded( ray )) return true;
 	#else
