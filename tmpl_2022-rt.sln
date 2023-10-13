@@ -8,6 +8,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2. Whitted", "2. Whitted\wh
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3. Cook", "3. Cook\cook.vcxproj", "{5759FEF0-6ECC-433F-967F-35990BD03D41}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4. Kajiya", "4. Kajiya\kajiya.vcxproj", "{EE621EC3-FAA8-4D95-8BAB-337042A52FC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -26,6 +28,10 @@ Global
 		{5759FEF0-6ECC-433F-967F-35990BD03D41}.Debug|x64.Build.0 = Debug|x64
 		{5759FEF0-6ECC-433F-967F-35990BD03D41}.Release|x64.ActiveCfg = Release|x64
 		{5759FEF0-6ECC-433F-967F-35990BD03D41}.Release|x64.Build.0 = Release|x64
+		{EE621EC3-FAA8-4D95-8BAB-337042A52FC0}.Debug|x64.ActiveCfg = Debug|x64
+		{EE621EC3-FAA8-4D95-8BAB-337042A52FC0}.Debug|x64.Build.0 = Debug|x64
+		{EE621EC3-FAA8-4D95-8BAB-337042A52FC0}.Release|x64.ActiveCfg = Release|x64
+		{EE621EC3-FAA8-4D95-8BAB-337042A52FC0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
